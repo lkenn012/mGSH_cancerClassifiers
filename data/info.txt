@@ -1,1 +1,6 @@
 All data used for model building, structural analysis, etc. as part of this publication are reported here
+-----
+41591_2019_404_MOESM2_ESM.xlsx		- CCLE metabolomics data file, raw data is processed as described in methods.
+ccleTranscriptomics_PCA.zip		- Principal components from processed raw CCLE transcriptomics data (.csv, zipped due to size)
+mGSH_labeledGenes_HighConAnnots.xlsx	- Ensemble gene IDs for each specified Gene Ontology term, used for specifiying the postivie class genes in binary classifer models.
+AlphaFold_SLC25As.zip			- AlphaFold2 predicted structures for SLC25 family proteins (.pdb files, zipped due to size)
