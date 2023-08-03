@@ -1,4 +1,4 @@
-## Code for mGSH ML model (MANUSCRIPT)
+## methods for use in classifier model code
 
 
 ## import module
@@ -12,51 +12,18 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import OneHotEncoder
 from scipy.stats import spearmanr, distributions
 
-# from numba import njit 	# for efficient spearman calcs
-
-### ADD PREPROCESSING STEPS	###
-## Load and pre-process data (pre-process.py)		!!! IF TRAIN/TEST-SPLIT, DO PRE-PROCESSING AFTER SPLIT	!!!!
 
 # define function to get p-val from spearman corr when correlatin transcripts (more efficient method, such as calling spearmanr() directly?)
 def spearmanr_pval(x,y):
 	return spearmanr(x,y)[1]
 
 # define function for thresholding spearman correlations
-# if pval >0.01 (or {pval_threshold}), replace corr value with 0
+# if pval >{pval_threshold}, replace corr value with 0
 def threshold_corr(corr_df, pval_df, pval_threshold=0.05):
 
 	threshold_df = corr_df.where(pval_df.values < pval_threshold, other=0)
 
 	return threshold_df
-
-# ## Calculate spearman correlations between given gene and remaining genes
-# # used in generating correlation features
-# def get_corrs(corr_id, raw_data, corr_data, corr_filePath=None):
-
-# 	if corr_id not in corr_data.columns:
-# 		rawRow_data = raw_data.loc[corr_id] 	# get transcriptomics data for selected genes
-
-# 		if isinstance(rawRow_data, pd.DataFrame):
-# 			rawRow_data = rawRow_data.iloc[0,:]	# if multiple rows corresponding to id, select first instance so we have a series
-
-# 		corr_matrix = raw_data.corrwith(rawRow_data, axis=1, method='spearman')	# generate pd.Series of spearman rho values for selected genes
-# 		pval_matrix = raw_data.corrwith(rawRow_data, axis=1, method=spearmanr_pval) 	# get corresponding pvals
-
-# 		# model takes abs(corr) & thresholded values for features
-# 		threshCorr_matrix = threshold_corr(corr_matrix, pval_matrix) 	# set spearm vals =0, if p-val > 0.01
-# 		finalCorr_matrix = threshCorr_matrix.abs()
-
-# 		corr_data.loc[:,corr_id] = finalCorr_matrix 
-# 		if corr_filePath:
-# 			# corr_data.to_csv(corr_filePath) 	# update corr file
-# 			corr_data.to_pickle(corr_filePath) 	# update pkl
-# 	else:
-# 		finalCorr_matrix = corr_data[corr_id]
-
-# 	finalCorr_matrix.name = corr_id
-# 	print(f'final corr matrix for {corr_id}:\n{finalCorr_matrix}')
-
-# 	return finalCorr_matrix
 
 # spearmanr p-value calculation from https://github.com/scipy/scipy/blob/v0.14.0/scipy/stats/stats.py
 # rs = spearman coefficients (rhos)
@@ -69,67 +36,7 @@ def pvalCalc_spearmanr(rs, n):
 
 	return prob
 
-### NUMBA METHODS
-## 	NOTE: Not compatible with numpy 1.24.0 instead pip install numpy 1.23.5
-# # numba array mean calculation
-# @njit
-# def mean1(a):
-#   n = len(a)
-#   b = np.empty(n)
-#   for i in range(n):
-#     b[i] = a[i].mean()
-#   return b
-
-# # numba array std calculation
-# @njit
-# def std1(a):
-#   n = len(a)
-#   b = np.empty(n)
-#   for i in range(n):
-#     b[i] = a[i].std()
-#   return b
-
-# # numba pearson calculation to be applied to rank values
-# @njit
-# def corr(a, b):
-#     ''' Correlation '''
-#     n, k = a.shape
-#     m, k = b.shape
-
-#     mu_a = mean1(a)
-#     mu_b = mean1(b)
-#     sig_a = std1(a)
-#     sig_b = std1(b)
-
-#     out = np.empty((n, m))
-
-#     for i in range(n):
-#         for j in range(m):
-#             out[i, j] = (a[i] - mu_a[i]) @ (b[j] - mu_b[j]) / k / sig_a[i] / sig_b[j]
-
-#     return out
-
-# # numba p-value calc
-# @njit
-# def pvalCalc_spearmanrNumba(rs, n):
- 
-# 	t = rs * np.sqrt((n-2) / ((rs+1.0)*(1.0-rs))) 	# t-value
-
-# 	prob = distributions.t.sf(np.abs(t),n-2)*2 	# calculate p-value from t
-
-# 	return prob
-
-# # numba wrapped p-value threshold
-# @njit
-# def p_thresh(thresh_val, rhos, pvals):
-# 	return np.where(pvals >= thresh_val, 0, rhos) 	# replaces correlations with 0 where p-val >= thresh
-
-##
-### END OF NUMBA METHODS
-
-# numba implementation of spearman calculation and thresholding as 'max' optimization
-# NOTE: First compilation will be equiv speed to python code
-# Taken from: https://stackoverflow.com/questions/52371329/fast-spearman-correlation-between-two-pandas-dataframes/59072032#59072032
+# Based on code from: https://stackoverflow.com/questions/52371329/fast-spearman-correlation-between-two-pandas-dataframes/59072032#59072032
 def get_corrs(corr_id, raw_data, corr_data, corr_filePath=None, abs_corr=True):
 
 	if corr_id not in corr_data.columns:
@@ -154,19 +61,13 @@ def get_corrs(corr_id, raw_data, corr_data, corr_filePath=None, abs_corr=True):
 		else:
 			final_corr = pd.DataFrame(data=thresh_corr.T, index=raw_data.index, columns=[corr_id])
 
-
 		# update and save corrs
 		corr_data.loc[:,corr_id] = final_corr
-		# if corr_filePath:
-		# 	corr_data.to_pickle(corr_filePath) 	# update pkl
-		# 	print(f'corr file updated')
 
 	else:
 		final_corr = corr_data[corr_id]
 
-	print(f'{corr_id} corr complete...')
 	return final_corr
-	# return print(f'{corr_id} corr complete...')
 
 ## For each model (mito, GSH, trasnporter) generate feature matrices
 
@@ -284,7 +185,7 @@ def fisher(data):
 	return np.arctanh(data) 
 
 # define function to preprocess feature data for model
-# return feat_data with numericcal (correlations) fisher transformed and categorical as one-hot encoded
+# return feat_data with numeric (correlations) fisher transformed and categorical as one-hot encoded
 def feat_preprocess(feat_data, categorical_cols=False):
 
 	if categorical_cols:
