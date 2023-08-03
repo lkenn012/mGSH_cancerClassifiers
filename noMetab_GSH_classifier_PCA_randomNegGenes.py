@@ -32,7 +32,7 @@ path = r'C:\Users\lkenn\OneDrive\Desktop\School and Work\Programming\MastersPyth
 # path = r'C:\Users\User\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code' 	# laptop path
 
 # CCLE data	
-ccle_genePCADF = pd.read_csv(rf'{path}\data\mitoTranscriptomics_PCA_Variance.csv', index_col=0)
+ccle_genePCADF = pd.read_csv(rf'{path}\data\ccleTranscriptomics_PCA.csv', index_col=0)
 
 ccle_genePCADF = ccle_genePCADF.iloc[2:,:-1]  	# need to omit first two rows (variance) and last column ('mito groups')
 
