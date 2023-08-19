@@ -1,4 +1,4 @@
-## main code for generating mito classifier model and outputs (for mGSH transporter prediction)
+## main code for generating classifier model, running, outputting results (for mGSH transporter prediction)
 ## The code employ multiomics-based PCA components as features, with a relevant GO term (glutathione metabolism, mitochondia localization, or transmembrane transport) to identify training/test genes (class 1) and random selection of equal length from the remaining genes (class 0)
 ## Training is boot strapped to account for the random selection of class 0 genes, and each iteration uses 10-cross fold validation 
 
@@ -27,7 +27,8 @@ import traceback # error messages
 import inspect
 from collections.abc import Iterator
 
-# load data to be used in model
+## load data to be used in model
+#
 path = r'C:\Users\lkenn\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code'
 # path = r'C:\Users\User\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code' 	# laptop path
 
@@ -256,7 +257,6 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		# Using multi-processing can paralellize these runs over our labeled genes
 
 		# # multiprocessing over boostrap iterations
-
 		with mp.Pool(processes=4) as pool: 	## processes=5 seems max (peak memory= 88%) as of 15-02
 			test_preds, unlabeled_preds = zip(*pool.map(
 				partial(
@@ -266,39 +266,6 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 			 split_trainingGenes)) 	# iterate over each boostrap with information from 'split_trainingGenes'
 
 			pool.close() 	# close pool
-
-		# # no pickle generator?
-		# with mp.Pool(processes=4) as pool: 	## processes=5 seems max (peak memory= 88%) as of 15-02
-		# 	results = pool.imap(
-		# 		partial(run_CVmodel, model_alg=ML_alg, feat_data=feat_df,pos_geneIDs=posLabel_genes),
-		# 	 split_trainingGenes) 	# iterate over each boostrap with information from 'split_trainingGenes'
-
-		# 	test_preds = []
-		# 	unlabeled_preds = []
-		# 	for test_pred, unlabeled_pred in results:
-		# 		test_preds.append(test_pred)
-		# 		unlabeled_preds.append(unlabeled_pred)
-
-		#	pool.close() 	# close pool
-
-
-		# mod_outputs = None
-		# with mp.Pool(processes=3) as pool: 	## processes=5 seems max (peak memory= 88%) as of 15-02
-		# 	mod_outputs = pool.map(
-		# 		partial(
-		# 		run_model, pos_geneList=posUnique_genes, 
-		# 		neg_geneList=negUnique_genes, 
-		# 		model_alg=ML_alg, 
-		# 		feat_data=feat_df),
-		# 	labeled_genes)
-
-		# 	pool.close() 	# close pool
-
-		# # Now have LOOCV_preds containing all preds for the model
-		# # Can format these results, get ROC, and save
-		# print(f'mod_outputs[:10]:\n{mod_outputs[:10]}')
-		# LOOCV_preds = mod_outputs[0]
-		# valid_preds = mod_outputs[1]
 
 		# LOOCV results to output df
 
@@ -316,18 +283,7 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		results_df['True label'] = true_labels
 
 		print(f'results df:\n{results_df}')
-
-		# Get ROC values (must first remove NAN values)
-		noNAN_df = results_df.loc[:, ['True label', 'Average predicted label']].dropna(axis=0)
-		print(f'data for roc:\n{noNAN_df}')
-
-		roc_data = mGSH.get_ROCvals(y=noNAN_df.loc[:,'True label'], pred_y=noNAN_df.loc[:,'Average predicted label'])
-		print(f'{roc_data}')
-
-		roc_df = pd.DataFrame(data=roc_data[:-1], index=['FPR', 'TPR', 'Threshold'])
-		print(f'Roc df:\n{roc_df}')
-		roc_df.loc['AUC'] = roc_data[-1]
-		print(f'roc_df with auc:\n{roc_df}')
+		
 		# Save outputs
 		date = datetime.today().strftime('%d-%m-%Y') 	# get a string of the current date via strftime()
 		out_path = rf'{path}\outputs'
@@ -337,47 +293,36 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		unknown_df = pd.concat(unlabeled_preds, axis=1)  # results from all iterations into one final results df
 		unknown_df['Average predicted label'] = unknown_df.mean(axis=1)
 
+		# Save results for unlabeled genes
 		unknown_df['Average predicted label'].to_csv(rf'{out_path}\{alg_name}_noMetab_GSH_highCon_unknownResults_{date}.csv')
-
-		# now need to get our unlabeled data
 
 		# Save results of model 
 		results_df.T.to_csv(rf'{out_path}\{alg_name}_noMetab_GSH_highCon_Results_{date}.csv')
-
-		# roc_df.to_excel(rf'{out_path}\{alg_name}_noMetab_GSHPCA_randNeg_ROC_{date}.xlsx') 	# save roc data for generating figures		### NOTE: not formatted correctly??
-		# roc_df.to_pickle(rf'{out_path}\{alg_name}_noMetab_GSHPCA_randNeg_ROC_{date}.pkl') 	# save as pkl since lists not saving correctly?
 
 
 #######
 
 ## RUN MAIN()
-main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=7, boot_iters=100, alg_name='NB_5')
-main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=16, boot_iters=100, alg_name='NB_14')
-main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=32, boot_iters=100, alg_name='NB_30')
-main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=52, boot_iters=100, alg_name='NB_50')
 
-main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=7, boot_iters=100, alg_name='SVM_5')
-main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=16, boot_iters=100, alg_name='SVM_14')
-main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=32, boot_iters=100, alg_name='SVM_30')
-main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=52, boot_iters=100, alg_name='SVM_50')
+## Code to run models with different parameters
 
-main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=7, boot_iters=100, alg_name='DT_5')
-main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=16, boot_iters=100, alg_name='DT_14')
-main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=32, boot_iters=100, alg_name='DT_30')
-main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=52, boot_iters=100, alg_name='DT_50')
+# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=7, boot_iters=100, alg_name='NB_5')
+# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=16, boot_iters=100, alg_name='NB_14')
+# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=32, boot_iters=100, alg_name='NB_30')
+# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=52, boot_iters=100, alg_name='NB_50')
+
+# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=7, boot_iters=100, alg_name='SVM_5')
+# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=16, boot_iters=100, alg_name='SVM_14')
+# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=32, boot_iters=100, alg_name='SVM_30')
+# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=52, boot_iters=100, alg_name='SVM_50')
+
+# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=7, boot_iters=100, alg_name='DT_5')
+# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=16, boot_iters=100, alg_name='DT_14')
+# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=32, boot_iters=100, alg_name='DT_30')
+# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=52, boot_iters=100, alg_name='DT_50')
 
 
 main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=7, boot_iters=100, alg_name='RF_5')
 main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=16, boot_iters=100, alg_name='RF_14')
 main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=32, boot_iters=100, alg_name='RF_30')
 main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=52, boot_iters=100, alg_name='RF_50')
-
-
-
-# !!!
-# NOTE: DIFFERENCE IN GENES BETWEEN MITOCARTA AND CCLE GENES DESPITE SAME # OF GENES
-# MEANS NAN VALUES FOR PCA/MITOCARTA VALUES FOR SOME GENES
-# Handled in other models during splits (???) but not here
-# for now drop rows with nan in line before training but in future need to find cause
-# means some genes will have NAN predicts
-# !!!
