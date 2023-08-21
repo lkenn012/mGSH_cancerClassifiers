@@ -1,4 +1,5 @@
-### Code for getting DeepGO annotations from a list of Ensembl gene IDs
+### Code for getting DeepGOWeb annotations from a list of Ensembl gene IDs
+### Calls the ensembl API to get transcript IDs and then protein FASTA sequences from a given gene ID, then calls DeepGOWeb API to annotate the sequences
 
 # import modules
 import requests
@@ -8,20 +9,19 @@ import numpy as np
 
 import get_FASTAseqs as ensgDB
 
-# define function to call the DeepGO web server to predict a given sequence
+# define function to call the DeepGOWeb server to annotate a given sequence with minimum classification threshold = {annot_threshold}
 def get_DeepGO(FASTA, annot_threshold=0.3):
 
 	headers = {'Content-Type': 'application/json'}
 	data = {'version': '1.0.13', 'data_format': 'fasta', 'data': FASTA, 'threshold': annot_threshold}
-	r = requests.post('https://deepgo.cbrc.kaust.edu.sa/deepgo/api/create', json=data, headers=headers) # , allow_redirects=False)
+	r = requests.post('https://deepgo.cbrc.kaust.edu.sa/deepgo/api/create', json=data, headers=headers)
 
-	result = r.json()
-	return result
+	return r.json() 	# Return as json
 
 # define a function to check deepGO annotation set for a specific GO term for calculating sensitivity 
 def get_GOAnnot(go, annotations, go_class=None):
 
-	# given a json return from deepGO get the predicted functions
+	# given a json returned from deepGOWeb get the predicted functions
 	try:
 		go_annots = annotations['predictions'][0]['functions']
 	except KeyError as e:
@@ -35,7 +35,8 @@ def get_GOAnnot(go, annotations, go_class=None):
 				for functions in go_group['functions']:
 					if functions[0] == go:
 						return functions[2]
-
+						
+	# if no GO class is specified check all functions
 	else:
 		for go_group in go_annots:
 			for functions in go_group['name']['functions']:
@@ -51,11 +52,13 @@ def annotate_Genes(annot_ids, n_samples=False):
 	# Optionally, if there are many genes for our GO term of interest, may want to annotate a subset due to slow speed of DeepGOWeb
 	if n_samples:
 		annot_ids = np.random.choice(annot_ids, n_samples)
-	annots = []
+		
+
 	# Iterate over our list of annot_ids
+	annots = [] 	# holder for our annotations
 	for ensg_id in annot_ids:
 
-		time.sleep(1)
+		time.sleep(1) 	# delays API calls
 		canonTrans_id = ensgDB.get_canonicalTranscript(ensg_id.strip()) 	# get transcript ID
 
 		# check if esng_id is found in ensembl, use corresponding canonical transcript to get fasta
@@ -99,13 +102,15 @@ def deepGOAnnots_fromIDs(ensgIDs, go_interest, annot_samples=False, class_thresh
 
 
 ##
-## DEFINE AND RUN MAIN for deepGO annotation
+## DEFINE AND RUN MAIN for an example of deepGO annotation
 ##
 
+# This is an example method to run the functions from this file to annotate a set of Gene IDs by DeepGOWeb, and then evaluate the sensitivity for a specified GO term of interest.
 def main():
 	
 	## load annotated ensembl IDs for GO terms of interest as pandas DF
-	data_path = {path} 	# Define the path to the annotation file
+	data_path = 'path' 	# Define the path to the annotation file or another xlsx file with ENSG IDs
+	
 	ensg_ids = pd.ExcelFile(rf"{data_path}\mGSH_labeledGenes_HighConAnnots.xlsx")
 	goTerm_ids = pd.read_excel(ensg_ids, sheet_name='GSH Ensembl') 	# GSH annotated IDs
 
@@ -118,6 +123,8 @@ def main():
 					    go_interest=go_term, 
 					    annot_samples=False
 					   )
+
+	## Now have our final results, the DeepGOWeb annotated genes: {annotated_df}, and the DeepGOWeb sensitivity for our specified GO term: {annot_sensitivity}
 
 ## RUN MAIN
 main()
