@@ -22,7 +22,7 @@ def get_canonicalTranscript(gene_id, version=False):
         id_version = data["canonical_transcript"].split(".")    # split into transcript ID and version ID
         return id_version[0]    # return ID only
 
-# define
+# define function to get corresponding protein sequence (in FASTA format) for a given transcript ensebml ID
 def get_proteinSeq(transcript_id):
     url = f"https://rest.ensembl.org/sequence/id/{transcript_id}?type=protein"
     response = requests.get(url, headers={"Content-Type": "text/plain"})
@@ -30,11 +30,12 @@ def get_proteinSeq(transcript_id):
 
 # Example usage
 def main():
-    gene_id = "ENSG00000133475"  # Replace with your actual ENSG gene ID
+    gene_id = "ENSG00000133475"         # !!! Replace with your actual ENSG gene ID, or loop over a list of IDs !!!
+    
     canonical_transcript_id = get_canonicalTranscript(gene_id)
     print(f"Canonical Transcript ID: {canonical_transcript_id}")
 
-    protein_sequence = get_proteinSeq(canonical_transcript_id)   # [:-2] removes the version number from the ID
+    protein_sequence = get_proteinSeq(canonical_transcript_id) 
     print(f"Protein Sequence:\n{protein_sequence}")
 
 ## RUN MAIN
