@@ -1,5 +1,4 @@
-## methods for use in classifier model code
-
+### Functions to be used in classifier code to format data, build, run and, evaluate classifier models
 
 ## import module
 import pandas as pd
@@ -17,13 +16,14 @@ from scipy.stats import spearmanr, distributions
 def spearmanr_pval(x,y):
 	return spearmanr(x,y)[1]
 
-# define function for thresholding spearman correlations
-# if pval >{pval_threshold}, replace corr value with 0
+
+# define function for thresholding spearman correlations by significance; If pval > {pval_threshold}, replace corr value with 0
 def threshold_corr(corr_df, pval_df, pval_threshold=0.05):
 
 	threshold_df = corr_df.where(pval_df.values < pval_threshold, other=0)
 
 	return threshold_df
+
 
 # spearmanr p-value calculation from https://github.com/scipy/scipy/blob/v0.14.0/scipy/stats/stats.py
 # rs = spearman coefficients (rhos)
@@ -35,6 +35,7 @@ def pvalCalc_spearmanr(rs, n):
 	prob = distributions.t.sf(np.abs(t),n-2)*2 	# calculate p-value from t
 
 	return prob
+
 
 # Based on code from: https://stackoverflow.com/questions/52371329/fast-spearman-correlation-between-two-pandas-dataframes/59072032#59072032
 def get_corrs(corr_id, raw_data, corr_data, corr_filePath=None, abs_corr=True):
@@ -69,24 +70,6 @@ def get_corrs(corr_id, raw_data, corr_data, corr_filePath=None, abs_corr=True):
 
 	return final_corr
 
-## For each model (mito, GSH, trasnporter) generate feature matrices
-
-## train/test 		!!! PRE-PROCESS??? !!!
-
-# ##
-# ## LOAD DATA
-# ##
-
-# path = r'C:\Users\lkenn\Desktop\School and Work\Programming\MastersPython\data\BroadInstitute CCLE'
-
-# # NOTE: duplicate ENSG IDs/ protein symbols have '_n' appened to end, since these correspond to isoforms, etc. in proteomics data but do not have unique IDs
-# ccle_metabGeneCorrDF = pd.read_csv(rf'{path}\correlations\CCLE_metabGeneSpearm_final.csv', index_col=0)	# metab-gene spearman (all data is trimmed, so equaliv entries in proteomics and transcriptomics)
-# ccle_geneCorrDF = pd.read_csv(rf'{path}\correlations\recon3D_GeneSpearm.csv', index_col=0)	# gene spearman (all data is trimmed, so equaliv entries in proteomics and transcriptomics)
-# ccle_geneDataDF = pd.read_csv(rf'{path}\Broad Institute Data\CCLE_geneExpressClean_trimmedImputed_final.csv', index_col=0)	# mRNA expression data for calculating correlations
-
-# ## None-Recon3D data
-# main_path = r'C:\Users\lkenn\Desktop\School and Work\Programming\MastersPython\data\BroadInstitute CCLE'
-# TrSSP_annots = pd.read_csv(rf'{main_path}\mitocarta_trssp_scores.csv, index_col', index_col=0, use_cols=[0,3,4]) 	# load DF containing IDs & cols for mitocarta, trssp scores
 
 # define function to get a randomly generated list of genes = [n * positive genes, n * negative genes] to be used as feature genes
 def get_featGenes(pos_geneIDs, neg_geneIDs, n_samples=1, except_ID=False):
@@ -117,12 +100,12 @@ def get_featGenes(pos_geneIDs, neg_geneIDs, n_samples=1, except_ID=False):
 
 	return feat_genes, trunc_posIDs, trunc_negIDs
 
+
 # define function to balance positive and negative samples
 # returns both lists with random samples removed such that len() of each is equal
 def balance_samples(pos_samples, neg_samples, sample_size=False, except_ID=False):
 
 	# If we have an ID to exclude from sampling, must remove from whichever list, do sampling, and add back in
-	### NOTE: Likely a more efficient way to do this
 	if except_ID:
 		try:
 			pos_samples.remove(except_ID)
@@ -173,16 +156,21 @@ def balance_samples(pos_samples, neg_samples, sample_size=False, except_ID=False
 
 	return balanced_pos, balanced_neg
 
-# define function to one-hot encode cattegorical calls from feat data
+
+# define function to one-hot encode categorical features (MitoCarta or TrSSP scores).
+# used in feat_preprocess()
 def one_hot(data, cat_cols):
 	cat_data = data[cat_cols]
 	oneHot_data = pd.get_dummies(cat_data, prefix=cat_cols)			### ! possibly can avoid this method by using 'columns=cat_cols' on original dataset, then split after for num_data
 
 	return oneHot_data
 
-# define function to fisher (i.e. arctanh) transform correlation values
+
+# define function to fisher (i.e. arctanh) transform correlation rho values for normalization.
+# used in feat_preprocess()
 def fisher(data):
 	return np.arctanh(data) 
+
 
 # define function to preprocess feature data for model
 # return feat_data with numeric (correlations) fisher transformed and categorical as one-hot encoded
@@ -198,6 +186,7 @@ def feat_preprocess(feat_data, categorical_cols=False):
 		return pd.concat([oneHot_cats, fisher_data], axis=1)
 	else:
 		return fisher(feat_data)
+
 
 # define function to split dataframe (features) based on idxs (genes)
 # returns the subset DF based on given idxs, and the remainder df (corresponds to train/test & validation)
