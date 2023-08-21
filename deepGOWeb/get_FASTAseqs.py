@@ -3,11 +3,6 @@
 # import modules
 import requests
 
-# List of gene symbols
-gene_symbols = ["TP53", "BRCA1", "EGFR"] 
-gene_symbols = ["OGDH", "AADAT", "IDH2", "D2HGDH", "PHYH", "GPT2", "DLST", "ADHFE1", "IDH1", "OGDHL", "GOT1", "TAT", "GOT2", "L2HGDH", "MRPS36"]
-gene_symbols = ["ENSG00000105953", "ENSG00000109576", "ENSG00000182054"] # , "ENSG00000180902", "ENSG00000107537", "ENSG00000166123", "ENSG00000119689", "ENSG00000147576", "ENSG00000138413", "ENSG00000197444", "ENSG00000120053", "ENSG00000198650", "ENSG00000125166", "ENSG00000087299", "ENSG00000134056"] 
-
 # define function to get the canonical transcript ID for a given Ensembl gene ID using the ensembl API
 def get_canonicalTranscript(gene_id, version=False):
     url = f"https://rest.ensembl.org/lookup/id/{gene_id}?expand=1"
@@ -42,4 +37,5 @@ def main():
     protein_sequence = get_proteinSeq(canonical_transcript_id)   # [:-2] removes the version number from the ID
     print(f"Protein Sequence:\n{protein_sequence}")
 
-# main()
+## RUN MAIN
+main()
