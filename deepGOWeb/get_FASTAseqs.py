@@ -1,3 +1,5 @@
+### Define functions to be used in 'get_DeepGOAnnots.py' for DeepGOWeb annotations
+###
 ### code to get FASTA sequences for a list of genes using the ensembl API
 
 # import modules
