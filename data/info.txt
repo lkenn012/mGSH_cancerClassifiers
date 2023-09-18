@@ -10,3 +10,4 @@ BroadInstitute-CCLE_RNAseq_rsem_genes_tpm_20180929_csv 		- CCLE transcriptomics 
 mitocarta_trssp_scores.csv 		- MitoCarta and TrSSP scores used for generating classifier features
 GSH_spearman.csv 			- GSH and GSSG Spearman correlations for CCLE metabolomics and transcriptomics data (thresholded)
 nonGSH_metab_spearman.csv 		- carnitine, 2-oxoglutarate, glutamate Spearman correlations for CCLE metabolomics and transcriptomics data (thresholded)
+SLC25_tunnelRes.pkl 			- residues identified by CAVER in SLC25 structure tunnels. Residues are used for local structural alignments
