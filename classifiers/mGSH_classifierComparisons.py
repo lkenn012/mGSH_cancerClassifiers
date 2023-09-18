@@ -1,15 +1,22 @@
 ## Code for comparing binary classifier models
+## statistical test methods are called in mGSH_compare_knowledgeAndHybrid.py for comparisons of hybrid classifier models produced here to the existing, knowledge-based, MitoCarta, or TrSSP
 
 
-# import modules for comparing models
+##
+## import modules
+##
 import pandas as pd
 import numpy as np
 
-from statsmodels.stats.contingency_tables import mcnemar 	# method for McNemar's test
 from scipy.stats import chi2_contingency 	# method for chi-squared test
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+
+##
+## Define methods for statistical tests
+##
 
 # Define a function to construct a contingency table of classifier results to be compared using McNemar's test
 def get_contingency(results, model_1, model_2, ground_truth):
@@ -44,12 +51,6 @@ def get_contingency(results, model_1, model_2, ground_truth):
 
 	# return the filled in contingency table
 	return conting
-
-## Define a function for McNemar's Test to compare paired data (in this case, comparing binary classifier models which use the same training/test data)
-def mcnemar_test(results_df):
-
-	# from a results df which contains rows = samples, columns = model_1
-	return
 
 ## Define a function for Chi-squared test to compare un-paired data (this is used when comparing our classifier & MitoCarta scores,  for example)
 def chi2_test(results_df, labels_1, labels_2, groundTruth_labels):
