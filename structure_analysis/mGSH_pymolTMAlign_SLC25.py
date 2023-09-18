@@ -1,7 +1,10 @@
 ### Code for conducting 3D structural comparisons using PyMOL for comparisons of known mGSH/non-mGSH SLC25 transporters with predicted transporters
 # 	SLC25 structures are aligned via the TM-align algorithm implemented in the TMalign module (https://zhanggroup.org/TM-align)
 
-# import modules
+##
+## import modules
+##
+
 import pymol as pm
 import os
 import re
@@ -11,7 +14,11 @@ import pandas as pd
 from psico.fitting import tmalign 	# (https://pymolwiki.org/index.php/TMalign)
 
 
-# define function to load and name proteins in pymol for structural alignment
+##
+## Define methods for structure alignment
+##
+
+# define function to load and name proteins in PyMol for structural alignment
 def load_structs(pn_1, pn_2, path):
 
 	# get names as structure file name without the file suffix (.pdb)
@@ -37,8 +44,8 @@ def struct_align(mobile_files, target_file, file_path):
 
 		super_results[mobile_name] = super_RMSD(mobile_name, target_name) 	# get structural alignment score (RMSD)
 
-		# pm.cmd.delete(mobile_name) 	# delete pymol objects after screen complete
-		# pm.cmd.delete(target_name)
+		pm.cmd.delete(mobile_name) 	# delete pymol objects after screen complete
+		pm.cmd.delete(target_name)
 
 	return pd.DataFrame.from_dict(super_results, orient='index', columns=[target_name]) # return alignment results as 1D DF with col=target and rows=mobile
 
@@ -86,8 +93,8 @@ def struct_TMalign(mobile_files, target_file, file_path, align_res=pd.Series()):
 
 		pm.cmd.show('mesh', mobile_name)
 		pm.cmd.show('mesh', target_name)
-		# pm.cmd.delete(mobile_name) 	# delete pymol objects after screen complete
-		# pm.cmd.delete(target_name)
+		pm.cmd.delete(mobile_name) 	# delete pymol objects after screen complete
+		pm.cmd.delete(target_name)
 
 	return pd.DataFrame.from_dict(tm_results, orient='index', columns=[target_name]) # return alignment results as 1D DF with col=target and rows=mobile NOTE: TM-align result is normalized to target sequence length
 
@@ -98,12 +105,11 @@ def struct_TMalign(mobile_files, target_file, file_path, align_res=pd.Series()):
 ##
 def main():
 
-	# define folder path
-	parent_path = r'C:\Users\User\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code'
+	# laod data
+	data_path = "path" 	## !! PLACEHOLDER !! replace this with the path to your data directory
+	struct_path = f'{data_path}\SLC25_structures' 	# path for specific models of interest
 
-	struct_path = rf'{parent_path}\data\SLC25_structures\AlphaFold SLC25As' 	# path for specific models of interest
-
-	local_alignResDF = pd.read_pickle(rf"{parent_path}\outputs\PyMol\SLC25_tunnelRes.pkl") 	# load data for each SLC25 proteins tunnel residues for local alignment (obtained from raw CAVER ouputs via mGSH_CAVER_resis.py)
+	local_alignResDF = pd.read_pickle(rf"{data_path}\SLC25_tunnelRes.pkl") 	# load data for each SLC25 proteins tunnel residues for local alignment (obtained from raw CAVER ouputs via mGSH_CAVER_resis.py)
 
 	struct_fs = []
 	# pulls all file in structure folder
@@ -115,17 +121,14 @@ def main():
 	for target in struct_fs:
 		screen = [struct for struct in struct_fs if struct != target] 	# screen against all other structures
 
-		align_results += [struct_TMalign(screen, target, struct_path, local_alignResDF)] 	# tm alignment with specified residues to align
-		exit()
-	print(f'align results:\n{align_results}')		
+		align_results += [struct_TMalign(screen, target, struct_path, local_alignResDF)] 	# tm alignment with specified residues to align	
 
 	results_df = align_results[0].join(align_results[1:])
-	results_df.to_csv(rf'{parent_path}\outputs\SLC25_localTMalign.csv')
+	results_df.to_csv(rf'{data_path}\SLC25_localTMalign.csv')
 	
 	# Get out!
 	pymol.cmd.quit()
 
 ###
 # run main()
-
 main()
