@@ -1,9 +1,20 @@
-## Code to extract interior/tunnel residues from caver results for SLC25 proteins for local structure alignments
+## Code to extract interior/tunnel residues from CAVER results for SLC25 proteins for local structure alignments.
+## This can be reproduced through the CAVER plugin in PyMol by loading a given protein structure and running CAVER with specified parameters (see Methods for more details), and each results folder is renamed to the given protein structure name (or whatever desired identified)
+## This script can be run 
 
-# import modules
+
+##
+## import modules
+##
+
 import os
 import re
 import pandas as pd
+
+
+##
+## Define methods for CAVER methods
+##
 
 # define function to read the caver outputs for a given protein and extract the tunnel-lining residues
 def get_residues(outputPath, tunnel_num=1):
@@ -50,13 +61,15 @@ def get_residues(outputPath, tunnel_num=1):
 def main():
 
 	# define path to caver results
-	data_path = r'C:\Users\User\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code\outputs\PyMol'
+	data_path = "path" 	## !! PLACEHOLDER !! replace this with the path to your data directory
 
 	caver_results = [name for name in os.listdir(rf'{data_path}\caver_output')]
 	print(f'Caver output folders:\n{caver_results}')
 	tunnel_clust = [1]*len(caver_results) 	# since there can be multiple identified tunnels, specify which one we want residues for (tunnel 1 is usually best)
 
-	# Based on 'SLC25_tunnelResidues.xlsx' notes, may want to select different tunnel for some proteins
+	##
+	## !! NOTE!! The following tunnels are selected based, visually, on specific CAVER outputs. Reproducing the CAVER analysis may cause these specific tunnels to be different due to variance in starting point selection or other parameters.
+	##
 	tunnel_clust[caver_results.index('SLC25A10_AF')] = 3
 	tunnel_clust[caver_results.index('SLC25A19_AF')] = 2
 	tunnel_clust[caver_results.index('SLC25A20_AF')] = 2
@@ -68,8 +81,10 @@ def main():
 	for i, out in enumerate(caver_results):
 		tunnel_residues.append(get_residues(rf'{data_path}\caver_output\{out}', tunnel_clust[i])) 	# pull residue data for specified tunnel in protein
 
+	# Save tunnel residues for all protein structures into one file which can be accessed for alignment
 	res_df = pd.Series(data=tunnel_residues, index=caver_results)
 	print(f'results df:\n{res_df}')
 	res_df.to_pickle(rf'{data_path}\SLC25_tunnelRes.pkl')
-
+	
+# run main method
 main()
