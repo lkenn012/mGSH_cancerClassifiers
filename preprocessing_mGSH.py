@@ -1,4 +1,5 @@
 ## Pre-processing data for features in mGSH classifier models. Cleans and imputes missing values from CCLE transcriptomics and metabolomics
+## Generate correlations across metabolomics and transcriptomics
 
 ##
 ## import modules
