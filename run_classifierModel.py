@@ -4,7 +4,11 @@
 
 # The specifics below runs a GSH term classifier and uses transcriptomics PCs as features, without GSH & GSSG metabolomics as features
 
-# import modules
+
+##
+## load data to be used in model
+##
+
 import pandas as pd
 import numpy as np
 
@@ -23,64 +27,30 @@ import main_mGSH as mGSH	# python file containing functions for building the mod
 import multiprocessing as mp
 from functools import partial
 
-import traceback # error messages
 
-
-import inspect
-from collections.abc import Iterator
-
+##
 ## load data to be used in model
-#
-path = r'C:\Users\lkenn\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code'
-# path = r'C:\Users\User\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code' 	# laptop path
+##
+
+data_path = r'path' 		## ENTER PATH TO ccleTranscriptomics_PCA.csv
 
 # CCLE data	
-ccle_genePCADF = pd.read_csv(rf'{path}\data\ccleTranscriptomics_PCA.csv', index_col=0)
+ccle_genePCADF = pd.read_csv(rf'{data_path}\ccleTranscriptomics_PCA.csv', index_col=0)
 
 ccle_genePCADF = ccle_genePCADF.iloc[2:,:-1]  	# need to omit first two rows (variance) and last column ('mito groups')
 
-ccle_GSHCorrDF = pd.read_csv(rf'{path}\data\GSH_spearman.csv', index_col=0) 	# GSH genes
+ccle_GSHCorrDF = pd.read_csv(rf'{data_path}\data\GSH_spearman.csv', index_col=0) 	# GSH correlations
 
-labeled_data = pd.ExcelFile(rf'{path}\data\mGSH_labeledGenes_HighConAnnots.xlsx')
+# Load labeled genes by GO annotation to be used as positive class for model
+labeled_data = pd.ExcelFile(rf'{data_path}\mGSH_labeledGenes_HighConAnnots.xlsx')
 mitoGenes_df = pd.read_excel(labeled_data, sheet_name='Mitochondrial Ensembl')
 transpGenes_df = pd.read_excel(labeled_data, sheet_name='Transporter Ensembl')
 gshGenes_df = pd.read_excel(labeled_data, sheet_name='GSH Ensembl')
 
 
-#####################################################
-####
-
-# This model is much simpler than the original approach
-# for this model we always have the same features (n PC_components) this may vary depending on the data and the threshold of the PCA (i.e. 14 components for 95% variance, 100 components for 99% variance)
-# For this iteration of the model we do not use housekeeping genes as the negative (class 0) gene sets, as it seems to bias the model to classify based on gene expression variance rather than the desired biological feature
-# When building the training/test set, randomly select and equal number of genes to our positive class, this constitutes the negative class. 
-# Now need to conduct some number of bootstrap steps to not bias the model, use 5 boostraps of gene selections, with 10-cross fold validation for now.
-
-# # Workflow:
-# 	Select number of components to use as features
-# 	select labeled genes to use:
-#		for i in n_boostraps:
-#			neg_genes = random.sample(non_positiveClassGenes, len(positiveClassGenes))
-#			boostrap_negGeneSets.append(neg_genes)
-# 	Add any other features (i.e. MitoCarta) -> categorical convert to one hot first
-# 	now have feat df with rows= labeled genes, columns = [pc components, mitocarta]
-
-# 	for gene_set in boostrap_negGeneSets:
-# 		test_data = pca_data.loc[gene]
-# 		train = pca_data.drop(gene, axis=0)
-# 		If normalizing features:
-# 			normalize train (normalize one value??)
-# 			normalize test
-
-# 			train model
-# 			test model
-# 			add test gene pred to results
-# 	calculate ROC
-# 	save outputs
-
-####
-####################################################
-
+##
+## define all necessary methods for classifier methods
+##
 
 # define function to generate train/test splits composed of our labeled genes from GO terms and a radnom selection of all other genes, for each iteration of our model
 def split_trainTest(class1_genes, n_iters, n_splits=5, all_geneDF=ccle_genePCADF):
@@ -237,6 +207,14 @@ def run_CVmodel(trainingData_splits, model_alg, feat_data, pos_geneIDs):
 # build outputs after
 def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 
+	'''
+	posLabel_genes: specifies the gene symbols for our positive class (annotated by GO term of interest)
+ 	ML_alg: method, specifies the sklearn ML algorithm method to call for model training/testing
+  	num_components: int, specifies the number of principal components from CCLE transcriptomics to use  as features in the model
+   	boot_iters: int, number of bootstrap iterations for training and testing classifier models with {boot_iters} randomly selected negative gene sets,
+    	alg_name: str, specifies a string to attach to output files for specifying model parameters
+	'''
+	
 	# Check used for multiprocessing
 	if __name__ == '__main__':
 
@@ -275,7 +253,7 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		print(f'test_preds (length = {len(test_preds)}):\n{test_preds}')
 
 		true_labels = test_preds[0]['True label']
-		print(f'!!!\ntrue labels count:\n{true_labels.value_counts()}')
+
 		# remove True labels from each df, will add back later
 		for df in test_preds:
 			df.drop('True label', axis=1, inplace=True)
@@ -288,7 +266,7 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		
 		# Save outputs
 		date = datetime.today().strftime('%d-%m-%Y') 	# get a string of the current date via strftime()
-		out_path = rf'{path}\outputs'
+		out_path = rf'{data_path}\outputs'
 
 		# results for unlabeled data
 		print(f'unlabeled_preds:\n{unlabeled_preds}')
@@ -296,17 +274,18 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		unknown_df['Average predicted label'] = unknown_df.mean(axis=1)
 
 		# Save results for unlabeled genes
-		unknown_df['Average predicted label'].to_csv(rf'{out_path}\{alg_name}_noMetab_GSH_highCon_unknownResults_{date}.csv')
+		unknown_df['Average predicted label'].to_csv(rf'{out_path}\{alg_name}_unknownResults_{date}.csv')
 
 		# Save results of model 
-		results_df.T.to_csv(rf'{out_path}\{alg_name}_noMetab_GSH_highCon_Results_{date}.csv')
+		results_df.T.to_csv(rf'{out_path}\{alg_name}_Results_{date}.csv')
 
 
 #######
 
 ## RUN MAIN()
 
-## Code to run models with different parameters
+## Code to run models with different parameters.
+## Below are all model parameters (algorithm and feature combinations) used in this paper.
 
 # main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=7, boot_iters=100, alg_name='NB_5')
 # main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=16, boot_iters=100, alg_name='NB_14')
