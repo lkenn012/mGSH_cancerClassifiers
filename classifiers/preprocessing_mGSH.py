@@ -127,6 +127,10 @@ def main():
 	common_geneDF = cleaned_geneDF.loc[:,common_CCLS].copy()
 	uniq_geneDF = cleaned_geneDF.drop(common_CCLS, axis=1)
 
+	cleaned_geneDF.to_csv(rf'{path}\cleaned_common_ccle_rnaSeq.csv') 	# optionally, save the cleaned common data for future use
+	cleaned_metabDF.to_csv(rf'{path}\cleaned_common_ccle_metabolomics.csv')
+	uniq_geneDF.to_csv(rf'{path}\cleaned_uniq_ccle_rnaSeq.csv')
+	
 	# Now generate correlations between the data, and then threshold based on p-vals & set to absollute
 	metab_cols = common_metabDF.loc[:, ['glutathione reduced', 'glutathione oxidized', 'alpha-ketoglutarate', 'carnitine', 'glutamate']]
 
