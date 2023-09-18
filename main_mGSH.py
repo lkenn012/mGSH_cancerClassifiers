@@ -1,6 +1,10 @@
 ### Functions to be used in classifier code to format data, build, run and, evaluate classifier models
 
-## import module
+
+##
+## import modules
+##
+
 import pandas as pd
 import numpy as np
 import random
@@ -11,6 +15,10 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import OneHotEncoder
 from scipy.stats import spearmanr, distributions
 
+
+##
+## Define methods for classifier models
+##
 
 # define function to get p-val from spearman corr when correlatin transcripts (more efficient method, such as calling spearmanr() directly?)
 def spearmanr_pval(x,y):
@@ -37,7 +45,7 @@ def pvalCalc_spearmanr(rs, n):
 	return prob
 
 
-# Based on code from: https://stackoverflow.com/questions/52371329/fast-spearman-correlation-between-two-pandas-dataframes/59072032#59072032
+# define method for get correlations across ccle transcriptomics
 def get_corrs(corr_id, raw_data, corr_data, corr_filePath=None, abs_corr=True):
 
 	if corr_id not in corr_data.columns:
@@ -161,7 +169,7 @@ def balance_samples(pos_samples, neg_samples, sample_size=False, except_ID=False
 # used in feat_preprocess()
 def one_hot(data, cat_cols):
 	cat_data = data[cat_cols]
-	oneHot_data = pd.get_dummies(cat_data, prefix=cat_cols)			### ! possibly can avoid this method by using 'columns=cat_cols' on original dataset, then split after for num_data
+	oneHot_data = pd.get_dummies(cat_data, prefix=cat_cols)
 
 	return oneHot_data
 
@@ -200,134 +208,3 @@ def split_feats(df, idxs):
 	# return selected df, and remainder in correct orientation
 	return slice_df, trunc_df
 
-# define function for getting ROC curve values from true and predicted labels
-def get_ROCvals(y, pred_y):
-
-	false_pr, true_pr, thresholds = roc_curve(y, pred_y)
-
-	auc_val = auc(false_pr, true_pr)
-
-	return [false_pr, true_pr, thresholds, auc_val]
-
-# define function for generating ROC curve from fp & tp rates
-def plot_ROC(plot_ax=False, plot_x=False, plot_y=False, auc=False, title=False, plot_data=None, plot_style=None, plot_palette=None):
-
-	sns.set_style('dark')
-
-	# roc_plot = sns.lineplot(x=plot_x, y=plot_y, ax=plot_ax)
-	# plt.legend(loc='lower right', labels=[f'ROC curve (area = {auc})'])
-	if plot_data is not None:
-		line_styles =['solid', 'dashed', 'dotted', 'dashdot'] 	# specify line styles (note: these are options in seaborn, may be a better way to specify)
-		for i, data in enumerate(plot_data):
-		# fpr_tprNP = plot_data.loc[:,['FPR', 'TPR', 'AUC']].to_numpy() 		### NOTE: Cannot calculate average ROC as len(fpr/tpr) varies over runs? Maybe need average per threshold isntead?
-		# print(f'fpr_tprNP:\n{fpr_tprNP}')
-		# print(f'FPR in df vs np:\n{plot_data["FPR"]}\n{fpr_tprNP[:,0]}')
-		# for fpr in fpr_tprNP[:,0]:
-		# 	print(f'fpr:\n{fpr}\nshape: {fpr.shape}')
-		# fpr_mean = np.mean(fpr_tprNP[:,0], axis=0)
-		# print(fpr_mean)
-		# avgs = np.mean(fpr_tprNP, axis=0)
-		# print(avgs)
-
-		# plot_data.loc['Mean'] = plot_data.mean(axis=0)
-
-			plot_AUC = data.loc[:,'AUC'] 	# AUC data affects plotting, want to use just for plot legend
-			print(f'plot_AUC: {plot_AUC}')
-			roc_data = data.drop('AUC', axis=1)
-			print(f'roc data:\n{roc_data}')
-			legend = []
-			count=0
-			for j, model_roc in roc_data.iterrows():
-				name = model_roc.name
-
-				model_rocDF = pd.DataFrame(data=[model_roc['FPR'], model_roc['TPR']], index=['FPR', 'TPR'])
-				print(f'model_roc:\n{model_roc}\nmodel_roc DF:\n{model_rocDF}')
-
-				# May have column of model features to specify on
-				if plot_style:
-					print(f' i * j:\n{i}, {j}')
-					print(f'plot colors: {plot_palette[i*3+count]}')
-					sns.set_theme()
-					sns.set_style({"grid.linestyle": line_styles[i]})
-					with sns.axes_style({"grid.linestyle": '-'}):
-						sns.lineplot(data=model_rocDF.T, x='FPR', y='TPR', ax=plot_ax, label=f'{name} (AUC = {"{0:0.3f}".format(plot_AUC[j])})', color=plot_palette[i*3+count], legend=False, errorbar=None) #, style=line_styles[i]) 			#### NOTE: not assigning line styles
-				else:
-					sns.lineplot(data=model_rocDF.T, x='FPR', y='TPR', ax=plot_ax, label=f'{name} (AUC = {"{0:0.3f}".format(plot_AUC[j])})', color=plot_palette[i*3+count], legend=False, errorbar=None)
-
-				count +=1 # for tracking palette
-
-	# add info for 50% line which will be added to plot
-	plt.plot([0,1], [0,1], color='black', linestyle='--', label='50% chance') 	# add 50% line
-	lines, labels = plot_ax.get_legend_handles_labels()
-	plt.legend(lines, labels) 	# add legend to plot
-
-	plt.xlabel('False positive rate')
-	plt.ylabel('True positive rate')
-	plt.title(title)
-
-	return plot_ax
-
-
-## Example maion function for generating a GSH ML model
-def main():
-
-	# !!! Param to be added to main()
-	model_alg = GaussianNB()
-
-	# get feature genes based on our training gene lists
-	feature_genes, new_posGenes, new_negGenes = get_featGenes(pos_geneList, neg_geneList, n)
-
-	# get feature gene correlations
-	feat_corrs = [get_corrs(gene_id, ccle_geneDataDF, ccle_geneCorrDF) for gene_id in feature_genes]
-
-	# now need other features, for GSH that is correlations between genes and GSH, GSSG
-	metab_feats = ccle_metabGeneCorrDF[['glutathione reduced', 'glutatihone oxidized']]		###	!!! THRESHOLD METAB CORRS 	!!!	###
-
-	# concat feature data into one df
-	feat_df = pd.concat([metab_feats, feat_corrs], axis=1)
-
-	# want training set to contain equal positive and negative genes
-	balanced_posGenes, balanced_negGenes = balance_samples(pos_geneList, neg_geneList)
-
-	# generate input data list and target list (1 = positive, 0 = negative) for model
-	x = balanced_posGenes + balanced_negGenes
-	y = [1]*len(balanced_posGenes) + [0]*len(balanced_negGenes)
-
-
-	# Have list of gene IDs to be used in training/test set, now need to get corresponding features (also gets remaining gene feats, i.e. validation set)
-	x_data, valid_data = split_feats(feat_df, x) 
-
-	# Now need to split training/test set, if necessary
-	x_train, x_test, y_train, y_test = train_test_split(x_data, y, train_size=0.80)
-
-	# need to preprocess features now (fisher transform & one-hot)
-	proX_train = feat_preprocess(x_train)
-	proX_test = feat_preprocess(x_test)
-
-	# fit (param-specified) algothim and predict on test set to get output probabilities
-	model_alg.fit(proX_train, y_train)
-	y_score = model_alg.predict_proba(proX_test) 	# probability for use in ROC curve
-
-	# generate fpr, tpr for ROC curve
-	fpr, tpr, model_auc = get_ROCvals(y, y_score)
-
-	# plot ROC curve
-	fig, ax = plt.subplots()
-
-	roc_curve = make_plot(ax, fpr, tpr, model_auc, title='Test ROC curve')
-
-	# Save plot
-	fig.savefig('test_ROC_2022-11-24_3.png')
-	fig.clf()
-
-###
-###	Add pre-processing steps
-###
-
-### !! THRESHOLD & ABS METAB-GENE CORRS !! ###
-### !! Should gene-gene corrs be over common CCLs, or all transcriptomics CCLs?
-### !! transform categorical values after train-test split?
-### !! Change mitocarta scores such that {1=Mito-localized, 0= nonMito-localized, -1= not in Human.MitoCarta3.0.xlsx}
-### !! how to do boostrapping when iterating over [ml algs, # of feat genes, random feat gene selection, LOOCV of labeled genes] = (5 * 10 * 10 * ~130) iterations
-### !! Remove overlapping genes between {positive genes} and housekeeping for use in features?
-### !! Add ENSG ID version # removal to preproceesing_mGSH.py
