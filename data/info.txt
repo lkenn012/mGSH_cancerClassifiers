@@ -3,4 +3,10 @@ All data used for model building, structural analysis, etc. as part of this publ
 41591_2019_404_MOESM2_ESM.xlsx		- CCLE metabolomics data file, raw data is processed as described in methods.
 ccleTranscriptomics_PCA.zip		- Principal components from processed raw CCLE transcriptomics data (.csv, zipped due to size)
 mGSH_labeledGenes_HighConAnnots.xlsx	- Ensemble gene IDs for each specified Gene Ontology term, used for specifiying the postivie class genes in binary classifer models.
-AlphaFold_SLC25As.zip			- AlphaFold2 predicted structures for SLC25 family proteins (.pdb files, zipped due to size)
+SLC25_structures.zip			- AlphaFold2 predicted structures for SLC25 family proteins, also includes homolgoy models used for SLC25A39 and A40 (.pdb files, zipped due to size)
+cleaned_ccle_rnaSeq.csv 		- cleaned and imputed CCLE transcriptomics data (.csv, zipped due to size)
+cleaned_ccle_metabolomics.csv 		- cleaned and imputed CCLE metabolomics data
+BroadInstitute-CCLE_RNAseq_rsem_genes_tpm_20180929_csv 		- CCLE transcriptomics data file, raw data is processed as described in methods. (.csv, zipped due to size)
+mitocarta_trssp_scores.csv 		- MitoCarta and TrSSP scores used for generating classifier features
+GSH_spearman.csv 			- GSH and GSSG Spearman correlations for CCLE metabolomics and transcriptomics data (thresholded)
+nonGSH_metab_spearman.csv 		- carnitine, 2-oxoglutarate, glutamate Spearman correlations for CCLE metabolomics and transcriptomics data (thresholded)
