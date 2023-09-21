@@ -38,7 +38,7 @@ Python   --3.8.16
 - requests   --2.28.1
 
 Installation information:
-'''
+```
 pip install numpy
 pip install pandas
 pip install scikit-learn
@@ -49,5 +49,5 @@ pip install seaborn
 conda install -c schrodinger pymol
 conda install -c speleo3 pymol-psico
 pip install requests
-'''
+```
 
