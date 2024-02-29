@@ -73,4 +73,6 @@ The outputs contain test set results found in the "Results" csv file, and classi
 
 Although this example, these classifiers predict annotations for gene ontology terms of interest based on CCLE transcriptomics data, this framework and ```run_model.py``` can be used in many applications, such as classifying metabolites based on a metabolomics dataset and a dataset of metabolite biochemical properties. The only requirements are that rows and columns correspond to samples and features/observations for use in classifiers and that sample identifiers are consistent across files (e.g., Ensembl gene/transcript IDs, UniProt IDs, Metabolite names).
 
+Simply entering the above command and replacing ```labeled-genes```, ```feature-date```, and possible ```other-features``` with the feature and label data of interest, meeting the aforementioned requirements, is sufficient for generating a novel classifier and predctions.
+
 We hope this code provides an easy implementation of our classification framework which can be used to generate hypotheses for biology! If you encounter and issues or would like to make a suggestion, please [open an issue](https://github.com/lkenn012/mGSH_cancerClassifiers/issues) so it can be addressed.
