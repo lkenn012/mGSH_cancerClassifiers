@@ -11,7 +11,7 @@ import numpy as np
 import sklearn.preprocessing as skpr
 from sklearn.impute import KNNImputer
 
-from  main_mGSH import spearmanr_pval, threshold_corr	# for generating correlations between GSH/GSSG and transcripts
+from main_mGSH import spearmanr_pval, threshold_corr	# for generating correlations between GSH/GSSG and transcripts
 
 ##
 ## Define methods for data preprocessing for classifier models

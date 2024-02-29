@@ -5,10 +5,7 @@
 # The specifics below runs a GSH term classifier and uses transcriptomics PCs as features, without GSH & GSSG metabolomics as features
 
 
-##
-## load data to be used in model
-##
-
+# import modules
 import pandas as pd
 import numpy as np
 
@@ -36,9 +33,6 @@ data_path = r'path' 		## ENTER PATH TO ccleTranscriptomics_PCA.csv
 
 # CCLE data	
 ccle_genePCADF = pd.read_csv(rf'{data_path}\ccleTranscriptomics_PCA.csv', index_col=0)
-
-ccle_genePCADF = ccle_genePCADF.iloc[2:,:-1]  	# need to omit first two rows (variance) and last column ('mito groups')
-
 ccle_GSHCorrDF = pd.read_csv(rf'{data_path}\data\GSH_spearman.csv', index_col=0) 	# GSH correlations
 
 # Load labeled genes by GO annotation to be used as positive class for model
@@ -76,8 +70,7 @@ def split_trainTest(class1_genes, n_iters, n_splits=5, all_geneDF=ccle_genePCADF
 		training_sets.append([labeled_geneList, gene_labels, splits])
 
 	return training_sets
-	# get random negative genes
-	# get random K-fold
+
 
 # define function which will take the labeled data from our excel tables and format + remove intersecting genes to feed into model
 def format_labeledGenes(pos_geneDF, neg_geneDF):
@@ -212,7 +205,7 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
  	ML_alg: method, specifies the sklearn ML algorithm method to call for model training/testing
   	num_components: int, specifies the number of principal components from CCLE transcriptomics to use  as features in the model
    	boot_iters: int, number of bootstrap iterations for training and testing classifier models with {boot_iters} randomly selected negative gene sets,
-    	alg_name: str, specifies a string to attach to output files for specifying model parameters
+    alg_name: str, specifies a string to attach to output files for specifying model parameters
 	'''
 	
 	# Check used for multiprocessing
@@ -236,8 +229,9 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		# Framework for model is boostrap iterations over cross-validated positive and random negative gene training sets 
 		# Using multi-processing can paralellize these runs over our labeled genes
 
-		# # multiprocessing over boostrap iterations
-		with mp.Pool(processes=4) as pool: 	## processes=5 seems max (peak memory= 88%) as of 15-02
+		# Multiprocessing over boostrap iterations
+		# The number of processes to use in the pool is dependent on the machine and number of the CPU cores.
+		with mp.Pool(processes=1) as pool: 		# default processes=1; 4 should be managable on most machines
 			test_preds, unlabeled_preds = zip(*pool.map(
 				partial(
 				run_CVmodel, model_alg=ML_alg, 
@@ -247,10 +241,6 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 
 			pool.close() 	# close pool
 
-		# LOOCV results to output df
-
-		# Need to concat the results into a single DF
-		print(f'test_preds (length = {len(test_preds)}):\n{test_preds}')
 
 		true_labels = test_preds[0]['True label']
 
@@ -280,12 +270,13 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		results_df.T.to_csv(rf'{out_path}\{alg_name}_Results_{date}.csv')
 
 
-#######
-
-## RUN MAIN()
+##############
+#	RUN MAIN()
+##############
 
 ## Code to run models with different parameters.
 ## Below are all model parameters (algorithm and feature combinations) used in this paper.
+## Uncommented runs correspond to random forest classifier models, which are the best performing framework.
 
 # main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=7, boot_iters=100, alg_name='NB_5')
 # main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=16, boot_iters=100, alg_name='NB_14')
