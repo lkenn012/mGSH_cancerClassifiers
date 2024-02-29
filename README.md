@@ -65,7 +65,7 @@ python run_model.py --help
 ```
 To get information about the various requirements to run the code.
 
-To run a simple classifier for glutathione metabolism based on a subset of CCLE transcriptomics principal components, unzip **ccleTranscriptomics_PCA.csv** in the **data** folder and enter the following into the command prompt after changing to the directory where these files are located:
+To run a simple classifier for glutathione metabolism based on a subset of CCLE transcriptomics principal components, unzip **ccleTranscriptomics_PCA.csv** in the **data** folder and, with that and the **exampleGSH_genes.csv** file, enter the following into the command prompt after changing to the directory where these files are located to generate predictions:
 ```
 python run_model.py --data-path "data" --labeled-genes "example_GSHgenes.csv" --feature-data "ccleTranscriptomics_PCA.csv" --select-features 5 --iterations 10 --cpu-cores 2
 ```
