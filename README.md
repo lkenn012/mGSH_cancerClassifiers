@@ -71,7 +71,7 @@ python run_model.py --data-path "data" --labeled-genes "example_GSHgenes.csv" --
 ```
 The outputs contain test set results found in the "Results" csv file, and classification probabilites for unlabeld samples are found in the "unknownResults" csv file under "Average predicted label". 
 
-Although this example, these classifiers predict annotations for gene ontology terms of interest based on CCLE transcriptomics data, this framework and ```run_model.py``` can be used in many applications, such as classifying metabolites based on a metabolomics dataset and a dataset of metabolite biochemical properties. The only requirements are that rows and columns correspond to samples and features/observations for use in classifiers and that sample identifiers are consistent across files (e.g., Ensembl gene/transcript IDs, UniProt IDs, Metabolite names).
+In this example, these classifiers predict annotations for gene ontology terms of interest based on CCLE transcriptomics data, however, this framework and ```run_model.py``` can be used in many applications, such as classifying metabolites based on a metabolomics dataset and a dataset of metabolite biochemical properties. The only requirements are that rows and columns correspond to samples and features/observations, respectively, for use in classifiers and that sample identifiers are consistent across files (e.g., Ensembl gene/transcript IDs, UniProt IDs, Metabolite names).
 
 Simply entering the above command and replacing ```labeled-genes```, ```feature-date```, and possible ```other-features``` with the feature and label data of interest, meeting the aforementioned requirements, is sufficient for generating a novel classifier and predctions.
 
