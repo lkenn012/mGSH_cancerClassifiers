@@ -1,6 +1,7 @@
 # Information
 Contains all code and data used for:
-"Mapping relationships between glutathione and SLC25 transporters in cancers using hybrid machine learning models" - Luke Kennedy, Jagdeep K Sandhu, Mary-Ellen Harper, and Miroslava Cuperlovic-Culf. **bioRxiv doi**: https://doi.org/10.1101/2023.09.20.558442
+"Mapping relationships between glutathione and SLC25 transporters in cancers using hybrid machine learning models" - Luke Kennedy, Jagdeep K Sandhu, Mary-Ellen Harper, and Miroslava Cuperlovic-Culf.
+**bioRxiv doi**: https://doi.org/10.1101/2023.09.20.558442
 
 All code can be run using the packages specified below and data provided in **data** to reproduce the models and results of this work (unless specified otherwise in the main text). Placeholder strings for path directories in the code should be replaced with the path to where ever the data is located on the indivdual's system. Parameters for e.g., ML algorithm or model features can be specified in the code to replicate described models or produce novel models.
 
