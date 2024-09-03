@@ -1,7 +1,7 @@
 # Information
-Contains all code and data used for:
-"Mapping relationships between glutathione and SLC25 transporters in cancers using hybrid machine learning models" - Luke Kennedy, Jagdeep K Sandhu, Mary-Ellen Harper, and Miroslava Cuperlovic-Culf.
-**bioRxiv doi**: https://doi.org/10.1101/2023.09.20.558442
+Contains all code and data used for:    
+"A hybrid machine learning framework for functional annotation applied to mitochondrial glutathione metabolism and transport in cancers" - Luke Kennedy, Jagdeep K Sandhu, Mary-Ellen Harper, and Miroslava Cuperlovic-Culf.    
+**💻📄**[**Read the paper here**](https://doi.org/10.1101/2023.09.20.558442)
 
 All code can be run using the packages specified below and data provided in **data** to reproduce the models and results of this work (unless specified otherwise in the main text). Placeholder strings for path directories in the code should be replaced with the path to where ever the data is located on the indivdual's system. Parameters for e.g., ML algorithm or model features can be specified in the code to replicate described models or produce novel models.
 
@@ -74,6 +74,6 @@ The outputs contain test set results found in the "Results" csv file, and classi
 
 In this example, these classifiers predict annotations for gene ontology terms of interest based on CCLE transcriptomics data, however, this framework and ```run_model.py``` can be used in many applications, such as classifying metabolites based on a metabolomics dataset and a dataset of metabolite biochemical properties. The only requirements are that rows and columns correspond to samples and features/observations, respectively, for use in classifiers and that sample identifiers are consistent across files (e.g., Ensembl gene/transcript IDs, UniProt IDs, Metabolite names).
 
-Simply entering the above command and replacing ```labeled-genes```, ```feature-date```, and possible ```other-features``` with the feature and label data of interest, meeting the aforementioned requirements, is sufficient for generating a novel classifier and predctions.
+Simply entering the above command and replacing ```labeled-genes```, ```feature-data```, and possible ```other-features``` with the feature and label data of interest, meeting the aforementioned requirements, is sufficient for generating a novel classifier and predctions.
 
 We hope this code provides an easy implementation of our classification framework which can be used to generate hypotheses for biology! If you encounter and issues or would like to make a suggestion, please [open an issue](https://github.com/lkenn012/mGSH_cancerClassifiers/issues) so it can be addressed.
