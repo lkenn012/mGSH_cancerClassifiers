@@ -1,5 +1,10 @@
-## Code for calculating ROC and PRC curves from classifier model results
-## This code, given a csv file with CV predictions across genes for a given classifier, along with corresponding true values, will split data by each iteration (i.e. each group of CVs), and calculate average CV ROC and PRCs for each iteration, which can then be plotted.
+## Kennedy et al. 2024
+#
+# Code for calculating and plotting various metrics from classifier model results
+# This code, given a csv file with CV predictions across genes for a given classifier, along with 
+# corresponding true values, will split data by each iteration (i.e. each group of CVs), and 
+# calculate average accuracy, precision, recall, F1 score, Matthew's correlation coefficient for 
+# each iteration, which can then be plotted.
 
 # import modules
 import glob
@@ -35,11 +40,8 @@ def get_cvROC(cv_preds, true_labels, base_rate, method='roc'):
 	# PRC values
 	elif method == 'prc':
 		prec, rec, thresh = precision_recall_curve(y_true=trues, probas_pred=preds)
-#		print(f'precision:\n{prec}, length: {len(prec)}')
-#		print(f'recall:\n{rec}, length: {len(rec)}')
 		interp_prec = np.interp(base_rate[::-1], rec[::-1], prec[::-1]) 	# interpolate values over our base rate for consistency, need to reverse orders for proper interpolation
 		interp_prec = interp_prec[::-1] 	# reverse order again to preserve plotting order
-# 		print(f'interpolated precision:\n{interp_prec}, length: {len(interp_prec)}')
 
 		return interp_prec
 
@@ -59,8 +61,6 @@ def get_MCC(pred_scores, true_labels, threshold=0.5):
 
 	# MCC requires labels rather than probabilities, convert probs to labels by 'threshold'
 	pred_labels = np.where(relev_preds >= threshold, 1, 0)
-
-	# print(f'initial scores:\n{relev_preds}\nConverted to labels:\n{pred_labels}')
 
 	# calculate and return mcc values
 	return matthews_corrcoef(y_true=relev_trues, y_pred=pred_labels)
@@ -107,8 +107,6 @@ def get_accuracy(pred_scores, true_labels, threshold=0.5):
 
 	# accuracy requires labels rather than probabilities, convert probs to labels by 'threshold'
 	pred_labels = np.where(relev_preds >= threshold, 1, 0)
-
-	# print(f'initial scores:\n{relev_preds}\nConverted to labels:\n{pred_labels}')
 
 	# calculate and return mcc values
 	return accuracy_score(y_true=relev_trues, y_pred=pred_labels)
@@ -186,7 +184,7 @@ def main():
 
 			scores =  iteration.apply(lambda x: get_F1_prec_rec(pred_scores=x, true_labels=trueLabels), axis=1)
 			scores = np.array(scores)
-			# print(f'scores as array: {scores}')
+
 			prc = np.array([iteration[0] for iteration in scores])
 			recall = np.array([iteration[1] for iteration in scores])
 			f1 = np.array([iteration[2] for iteration in scores])
