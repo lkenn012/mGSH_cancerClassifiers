@@ -1,6 +1,10 @@
-## main code for generating classifier model, running, outputting results (for mGSH transporter prediction)
-## The code employ multiomics-based PCA components as features, with a relevant GO term (glutathione metabolism, mitochondia localization, or transmembrane transport) to identify training/test genes (class 1) and random selection of equal length from the remaining genes (class 0)
-## Training is boot strapped to account for the random selection of class 0 genes, and each iteration uses 10-cross fold validation 
+## Kennedy et al. 2024
+#
+# main code for generating classifier model, running, outputting results (for mGSH transporter prediction)
+# The code employ multiomics-based PCA components as features, with a relevant GO term (glutathione metabolism,
+# mitochondia localization, or transmembrane transport) to identify training/test genes (class 1) and random 
+# selection of equal length from the remaining genes (class 0)
+# Training is boot strapped to account for the random selection of class 0 genes, and each iteration uses 10-cross fold validation 
 
 # The specifics below runs a GSH term classifier and uses transcriptomics PCs as features, without GSH & GSSG metabolomics as features
 

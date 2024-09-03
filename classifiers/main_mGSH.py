@@ -1,4 +1,6 @@
-### Functions to be used in classifier code to format data, build, run and, evaluate classifier models
+## Kennedy et al. 2024
+#
+# Helper functions to be used in classifier code to format data, build, run and, evaluate classifier models
 
 
 ##

@@ -1,6 +1,7 @@
 ## Code for calculating evaluation metrics from classifier model results
 ## This code, given a csv file with CV predictions across genes for a given classifier, along with corresponding true values, will split data by each iteration (i.e. each group of CVs), and calculate average CV ROC, PRCs, and MCC for each iteration, which can then be plotted (mGSH_rocPlots.py).
 
+
 ##
 ## import modules
 ##
@@ -14,7 +15,6 @@ from sklearn.metrics import precision_recall_curve, roc_curve, auc, matthews_cor
 # for plotting and labelling
 import re
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import seaborn as sns
 
 # define function to get the ROC values from the predicted labels for a given model CV
@@ -72,9 +72,9 @@ def plot_curve(all_ys, mean_baserate, plot_modelNames=False):
 
 	# Need to combine all data into a single DF for plotting
 	if plot_modelNames:
-		roc_df = pd.DataFrame(data=all_ys, index=plot_modelNames, columns=mean_baserate)
+		roc_df = pd.DataFrame(data=all_ys, index=plot_modelNames, cols=mean_baserate)
 	else:
-		roc_df = pd.DataFrame(data=all_ys, columns=mean_baserate)
+		roc_df = pd.DataFrame(data=all_ys, cols=mean_baserate)
 		
 	# plot ROCs
 	fig, ax = plt.subplots()
@@ -87,20 +87,13 @@ def plot_curve(all_ys, mean_baserate, plot_modelNames=False):
 
 	NOTE: transcriptomics-only models actually have 1 or 2 extra PC components than what is specified, since the knowledge-based components are replaced with transcriptomics feats, as described in methods
    	'''
-	plt.plot([0,1], [0,1], color='black', linewidth=2.25, linestyle='--', label='50% chance')
-
-	hybrid_df = roc_df.iloc[:len(roc_df.index)//2]
-	trans_df = roc_df.iloc[len(roc_df.index)//2:]
-	print(f'Hybrid:\n{hybrid_df}\n\nTrans:\n{trans_df}')
 	
-	sns.lineplot(data=trans_df.T, ax=ax, palette=["sandybrown", "orange", "darkorange", "peru"], linewidth=2.25, dashes=False)
-	plt.setp(ax.lines, linestyle='--')
-	sns.lineplot(data=hybrid_df.T, ax=ax, palette=["sandybrown", "orange", "darkorange", "peru"], linewidth=2.25, dashes=False)
-
+	sns.lineplot(data=roc_df.T, ax=ax, palette=["plum", "orchid", "darkviolet", "rebeccapurple", "gainsboro", "silver", "slategrey", "dimgray"], linewidth=1.75, dashes=False)
+	
+	
+	plt.plot([0,100], [0,1], color='black', linestyle='--', label='50% chance')
+	
 	ax.xaxis.set_major_locator(ticker.MultipleLocator(base=20))
-	ax.set_xlabel('False Postivie Rate', fontsize=14)
-	ax.set_ylabel('True Postivie Rate', fontsize=14)
-
 	
 	plt.tight_layout()
 	sns.move_legend(ax, loc='center left', bbox_to_anchor=(1, 0.5))
@@ -111,29 +104,15 @@ def plot_curve(all_ys, mean_baserate, plot_modelNames=False):
 # def main function for calculating evaluation metrics from model results
 def main():
 
-	print(f'running main')
 	# load data
 	data_path = "path" 	## !!PLACEHOLDER!! replace with the path for your data directory
 	f_nameRegex = ".+_Results_.+.csv" 	## !!PLACEHOLDER!! replace with a regex pattern for specific models to evaluate, the given Regex will match any 'Results' csv produced from 'run_classifierModel.py' containing test label predictions
-	data_path = r'C:\Users\User\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code\outputs2' 	# laptop path
-	f_nameRegex = [	# r'RF_[0-9]+_GSH_highCon_Results_18-06-2023.csv', r'RF_[0-9]+_noMetab_GSH_highCon_Results_26-06-2023.csv'] 
-			# r'RF_[0-9]+_mito_highCon_Results_18-06-2023.csv', r'RF_[0-9]+_noCarta_mito_highCon_Results_26-06-2023.csv'] 	# ,
-			r'RF_[0-9]+_transp_highCon_Results_20-06-2023.csv', r'RF_[0-9]+_noTrSSP_transp_highCon_Results_26-06-2023.csv']
-			# ]
-
-	print(f'running main')
-	f_names = [f for f_name in f_nameRegex for f in os.listdir(data_path) if re.match(f_name, f)]
- 	# get list of file name containing model results
-	print(f'running main')
-	print(f'f_names: {f_names}')
-	new_Fnames = [f_names[3], f_names[0], f_names[1], f_names[2], f_names[7], f_names[4], f_names[5], f_names[6]]
-	print(f'new_fnames: {new_Fnames}')
+	
+	f_names = [f for f in os.listdir(data_path) if re.match(rf'{f_nameRegex}', f)] 	# get list of file name containing model results
 
 	# Calculate evaluation metrics for each model in our list
-	mean_fpr = np.linspace(0, 1, 100) 	# this generates 100 values to use as common FPR values across CVs and iterations, this is necessary since the number of FPR/TPR values will vary
-	mean_tprs = []
-	for model in new_Fnames:
-		data = pd.read_csv(rf'{data_path}\{model}', index_col=0) 	# load data as df
+	for model in f_names:
+		data = pd.read_csv(rf'{results_path}\{model}', index_col=0) 	# load data as df
 
 		# pull avg. predictions (not needed) and true labels, then split df into sub_dfs by # of CVs (5)
 		data_T = data.T
@@ -147,6 +126,7 @@ def main():
 		iter_precs = []
 		iter_mccs = []
 
+		mean_fpr = np.linspace(0, 1, 100) 	# this generates 100 values to use as common FPR values across CVs and iterations, this is necessary since the number of FPR/TPR values will vary
 		for iteration in iter_dfs:
 
 			# get ROC and PRC values for each CV (i.e. row)
@@ -171,7 +151,6 @@ def main():
 		# Get average ROC/PRC values from our iteration values
 		mean_TPR = np.array(iter_TPRs).mean(axis=0)
 		mean_precision = np.array(iter_precs).mean(axis=0)
-		print(f'mean_TPR: {mean_TPR}')
 
 		mean_mcc = np.array(iter_mccs).mean(axis=0)
 		print(f'~~~~~~~~~~~\n{model} model results:')
@@ -182,20 +161,12 @@ def main():
 
 		mean_auprc = auc(x=mean_fpr, y=mean_precision)
 		print(f'average AUROC over iterations: {mean_auprc}')
+		
+		# Now can plot a ROC curve from these data
+		roc_fig, roc_ax = plot_curve(all_ys=iter_TPRs, mean_baserate=mean_fpr, plot_modelNames=False)
 
-		mean_tprs.append(mean_TPR)
-
-	folder_path = r'C:\Users\User\OneDrive\Desktop\School and Work\Programming\MastersPython\mGSH manuscript code\outputs'
-	# rocFile_names = [f for f in os.listdir(folder_path) if re.match(r'ROC_RF_.+GSH_highCon_Results.+.csv', f)]
-	# print(f'rocFile_names: {rocFile_names}')
-	# exit()
-
-	
-	# Now can plot a ROC curve from these data
-	roc_fig, roc_ax = plot_curve(all_ys=mean_tprs, mean_baserate=mean_fpr, plot_modelNames=['5 PC', '14 PC', '30 PC', '50 PC', '5 PC, transcriptomics-only', '14 PC, transcriptomics-only', '30 PC, transcriptomics-only', '50 PC, transcriptomics-only'])
-
-	# Save fig
-	roc_fig.savefig(rf'{folder_path}\ROC_classifier_models_1600dpi_30-80.png', bbox_inches='tight', dpi=1600)
+		# Save fig
+		roc_fig.savefig(rf'{folder_path}\ROC_classifier_models_600dpi.png', bbox_inches='tight', dpi=600)
 		
 
 # run main

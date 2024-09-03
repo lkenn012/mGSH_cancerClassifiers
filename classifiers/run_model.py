@@ -1,6 +1,9 @@
-## Code for running a "generic" classifier model using the framework developed here.
-## In command-line, users can specify the labeled data for the GO term (or other function) of interest, and feature data to get classificatioon probabilites.
-## See README for detailed information.
+## Kennedy et al. 2024
+#
+# Code for running a "generic" classifier model using the framework developed here.
+# In the terminal, users can specify the labeled data for the GO term (or other function)
+# of interest, and feature data to get classificatioon probabilites.
+# See README for detailed information.
 
 
 # import modules
