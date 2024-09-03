@@ -12,3 +12,4 @@ GSH_spearman.csv 			- GSH and GSSG Spearman correlations for CCLE metabolomics a
 nonGSH_metab_spearman.csv 		- carnitine, 2-oxoglutarate, glutamate Spearman correlations for CCLE metabolomics and transcriptomics data (thresholded)
 SLC25_tunnelRes.pkl 			- residues identified by CAVER in SLC25 structure tunnels. Residues are used for local structural alignments
 exampleGSHgenes.csv			- Sample file for labeled entries in classifier training in run_model.py demo
+MSA_inputs.txt				- Text file containing directions and sequences for proteins used in multiple sequence alignments

@@ -48,3 +48,33 @@ def main():
 	
 # run main code
 main()
+
+
+
+'''
+For use of principal components in our downstream task of function annotation, we would like to evaluate the robustness of the components. One approach
+to do this is by generating components from subsets of the data, training sets, and evaluating the error when the trained algorithm is applied to the test
+subset. This can be done through random subsets, or subsets defined by our sample groups in the CCLE data - namely, tissue types.
+'''
+
+def tissue_split(trans_data: pd.DataFrame, tissue_ids=None: str|list):
+
+	'''
+	trans_data (pandas DataFrame):	Dataframe containing CCLE transcriptomics data (genes x cell lines)
+	tissue_ids (str or list, opt):	Optional tissue identifiers to subset data on, if not provided all unique tissues will be subset.
+	'''
+
+	# Check for tissue_ids and handle
+	if tissue_ids:
+		if isinstance(tissue_ids, list): 
+
+		elif isinstance(tissue_ids, str):
+
+		else:
+			raise ValueError(f'tissue_ids object must be of type \"str\" or \"list\". (tissue_ids: {tissue_ids})')
+
+	# CCLE sample codes are of the form {ID_chars}_{tissue_chars}. We want to split these codes to get {tissue_chars} for subsetting the data
+	samples = trans_data.columns 
+	test_list = ['DMS53_LUNG', 'SW1116_LARGE_INTESTINE', 'NCIH1694_LUNG', 'P3HR1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE']
+	sample_tissues = [re.match(r'^{\W}+_', sample) for sample in test_list]
+	return
