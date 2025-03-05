@@ -13,3 +13,7 @@ nonGSH_metab_spearman.csv 		- carnitine, 2-oxoglutarate, glutamate Spearman corr
 SLC25_tunnelRes.pkl 			- residues identified by CAVER in SLC25 structure tunnels. Residues are used for local structural alignments
 exampleGSHgenes.csv			- Sample file for labeled entries in classifier training in run_model.py demo
 MSA_inputs.txt				- Text file containing directions and sequences for proteins used in multiple sequence alignments
+diseaseStudy.txt			- TCGA disease codes for determining sample tissue sites in transcriptomics data
+tissueSourceSite.txt			- TCGA sample codes. Links participant samples to disease codes in transcriptomics data.
+CLE_meta.txt				- Connects CCLE cell lines to TCGA tissue samples (https://github.com/katharineyu/TCGA_CCLE_paper)
+NOTE: TCGA_rnaseq			- Due to file size, this file is not included. Downloaded from: https://gdc.cancer.gov/about-data/publications/pancanatlas

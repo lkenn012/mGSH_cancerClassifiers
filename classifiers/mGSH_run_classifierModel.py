@@ -6,7 +6,7 @@
 # selection of equal length from the remaining genes (class 0)
 # Training is boot strapped to account for the random selection of class 0 genes, and each iteration uses 10-cross fold validation 
 
-# The specifics below runs a GSH term classifier and uses transcriptomics PCs as features, without GSH & GSSG metabolomics as features
+# The specifics below runs  Mito, transporter, and GSH term classifier which use transcriptomics PCs as features only (without GSH & GSSG metabolomics as features, for example)
 
 
 # import modules
@@ -29,21 +29,10 @@ import multiprocessing as mp
 from functools import partial
 
 
-##
-## load data to be used in model
-##
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-data_path = r'path' 		## ENTER PATH TO ccleTranscriptomics_PCA.csv
 
-# CCLE data	
-ccle_genePCADF = pd.read_csv(rf'{data_path}\ccleTranscriptomics_PCA.csv', index_col=0)
-ccle_GSHCorrDF = pd.read_csv(rf'{data_path}\data\GSH_spearman.csv', index_col=0) 	# GSH correlations
-
-# Load labeled genes by GO annotation to be used as positive class for model
-labeled_data = pd.ExcelFile(rf'{data_path}\mGSH_labeledGenes_HighConAnnots.xlsx')
-mitoGenes_df = pd.read_excel(labeled_data, sheet_name='Mitochondrial Ensembl')
-transpGenes_df = pd.read_excel(labeled_data, sheet_name='Transporter Ensembl')
-gshGenes_df = pd.read_excel(labeled_data, sheet_name='GSH Ensembl')
 
 
 ##
@@ -51,11 +40,21 @@ gshGenes_df = pd.read_excel(labeled_data, sheet_name='GSH Ensembl')
 ##
 
 # define function to generate train/test splits composed of our labeled genes from GO terms and a radnom selection of all other genes, for each iteration of our model
-def split_trainTest(class1_genes, n_iters, n_splits=5, all_geneDF=ccle_genePCADF):
+def split_trainTest(class1_genes, n_iters, all_geneDF, n_splits=5):
+
+	# get labeled genes found in our dataset
+	class1_geneList = class1_genes.iloc[:,0].tolist()
+	try:
+		class1_geneList = all_geneDF.loc[class1_geneList].index
+	except KeyError as e:
+		print(f'NOTE: Continuing even though some labeled genes were not found...')
+		print(f'If this is unexpected, review the input data!')
+		print(f'List of missing genes....\n{repr(e)}')
+
+		class1_geneList = all_geneDF.loc[all_geneDF.index.isin(class1_geneList)].index 	# get all the found genes
 
 	# get unlabeled genes
 	all_genes = all_geneDF.index.tolist() 	# list of all genes
-	class1_geneList = class1_genes.iloc[:,0].tolist()
 	unlabled_genes = list(set(all_genes) - set(class1_geneList)) 	# get the difference between the labeled class1 genes and all other genes in our data
 	
 	# For each split,
@@ -63,8 +62,7 @@ def split_trainTest(class1_genes, n_iters, n_splits=5, all_geneDF=ccle_genePCADF
 
 	for i in range(n_iters):
 		class0_geneList = random.sample(unlabled_genes, len(class1_geneList))
-
-		labeled_geneList = np.array(class1_geneList + class0_geneList) 	# all labeled Gene IDs
+		labeled_geneList = np.append(class1_geneList, class0_geneList) 	# all labeled Gene IDs
 		gene_labels = np.array([1]*len(class1_geneList) + [0]*len(class0_geneList)) 	# corresponding labels
 
 		# Get balanced K-fold splits for the data
@@ -127,7 +125,7 @@ def build_PC_feats(pc_data, num_components, other_data, other_categorical=False,
 
 	# other data to one hot if categorical
 	if other_categorical:
-		oneHot_other = pd.get_dummies(other_data, prefix=other_data.name)
+		oneHot_other = pd.get_dummies(other_data, prefix=other_data.name, drop_first=True)
 
 		return pd.concat([feat_componentDF, oneHot_other], axis=1)
 
@@ -142,7 +140,7 @@ def build_PC_feats(pc_data, num_components, other_data, other_categorical=False,
 		return pd.concat([feat_componentDF, other_data], axis=1)
 
 # define run_model function for running the model with our PCA feat inputs
-def run_CVmodel(trainingData_splits, model_alg, feat_data, pos_geneIDs):
+def run_CVmodel(trainingData_splits, model_alg, feat_data, pos_geneIDs, get_importances=True):
 
 	# Extract the data we are using, for clarity
 	labeled_geneIDs = trainingData_splits[0]
@@ -172,7 +170,14 @@ def run_CVmodel(trainingData_splits, model_alg, feat_data, pos_geneIDs):
 		unlabeled_data.dropna(inplace=True)
 
 		# Now need to get feature data for labeled genes
-		labeled_data = feat_data.loc[labeled_geneIDs]
+		try:
+			labeled_data = feat_data.loc[labeled_geneIDs]
+		except KeyError as e:
+			print(f'NOTE: Continuing even though some labeled genes were not found...')
+			print(f'If this is unexpected, review the input data!')
+			print(f'List of missing genes....\n{repr(e)}')
+
+			labeled_data = feat_data.loc[feat_data.index.isin(labeled_geneIDs)] 	# get all the found genes
 
 		# Split by our K-fold indexes in k_fold: [[1,5,8,9,10...], [2,3,4,6,7,...]] = [train_idxs, test_idxs]
 		x_train = labeled_data.iloc[K_fold[0]]
@@ -198,29 +203,46 @@ def run_CVmodel(trainingData_splits, model_alg, feat_data, pos_geneIDs):
 
 		print(f'labeled_predDF:\n{labeled_predDF}\nunlabeled pred:\n{unlabeled_predDF}')
 
-	return labeled_predDF, unlabeled_predDF 	# return predictions for this iteration
+		# If we are using a random forest model, we can easily get feature importances
+		if get_importances:
+			importances = model_alg.feature_importances_
+
+			feat_importances = pd.Series(importances, index=feat_data.columns.values)
+
+			return labeled_predDF, unlabeled_predDF, feat_importances
+
+
+	return labeled_predDF, unlabeled_predDF, None 	# return predictions for this iteration
 
 # define main() which runs model using LOOCV, for a specified ML model, and feat gene distribution and bootstrapping
 # build outputs after
-def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
+def build_model_run(pca_data, posLabel_genes, ML_alg, num_components, 
+	other_feats=None, feat_corrs=False, feat_cats=False, 
+	boot_iters=2, alg_name=''
+	):
 
 	'''
-	posLabel_genes: specifies the gene symbols for our positive class (annotated by GO term of interest)
- 	ML_alg: method, specifies the sklearn ML algorithm method to call for model training/testing
-  	num_components: int, specifies the number of principal components from CCLE transcriptomics to use  as features in the model
-   	boot_iters: int, number of bootstrap iterations for training and testing classifier models with {boot_iters} randomly selected negative gene sets,
-    alg_name: str, specifies a string to attach to output files for specifying model parameters
+	pca_data, pd.Df: 		input transcriptomics data PCs 	
+	posLabel_genes: 		specifies the gene symbols for our positive class (annotated by GO term of interest)
+ 	ML_alg, method: 		specifies the sklearn ML algorithm method to call for model training/testing
+  	num_components, int: 	specifies the number of principal components from CCLE transcriptomics to use as features in the model
+  	other_feats, pd.Df: 	Other input feature data to be used in the model
+  	feat_corrs, bool: 		if other input features are used, specifies if correlation data (for pre-processing)
+  	feat_cats, bool:		if other input features are used, specifies if categorical data (for pre-processing)	
+   	boot_iters, int: 		number of bootstrap iterations for training and testing classifier models with {boot_iters} randomly selected negative gene sets,
+    alg_name, str:  		specifies a string to attach to output files for specifying model parameters
 	'''
 	
 	# Check used for multiprocessing
 	if __name__ == '__main__':
 
 		# construct the feature data DF to feat into our model
-		feat_df = build_PC_feats(pc_data=ccle_genePCADF, 
-			num_components=num_components, 		# explains 95% of variance
-			 other_data=None,  	# or = mitocartaScores
-			 other_corr=False
-			 )
+		feat_df = build_PC_feats(pc_data=pca_data, 
+			num_components=num_components, 		# First {n} PC components to use
+			other_data=other_feats,  	# (e.g., ccle_GSHCorrDF or mitocartaScores
+			other_corr=feat_corrs,
+			other_categorical=feat_cats
+			)
 
 		# Check and clean data so that there are no missing data used in the model
 		if feat_df.isnull().any(axis=1).any():
@@ -228,7 +250,6 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 
 		# Given a list of genes in our positive class, need to randomly select some negative genes from the remaining gene list
 		split_trainingGenes = split_trainTest(class1_genes=posLabel_genes, n_iters=boot_iters, all_geneDF=feat_df) 	# have a balanced list of gene sets for each boostrap iteration: ['training/test genes', 'labels', 'K-fold split idxs'] for each iteration
-		print(f'length of splits (should = boot_iters): {len(split_trainingGenes)}')
 
 		# Framework for model is boostrap iterations over cross-validated positive and random negative gene training sets 
 		# Using multi-processing can paralellize these runs over our labeled genes
@@ -236,15 +257,14 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		# Multiprocessing over boostrap iterations
 		# The number of processes to use in the pool is dependent on the machine and number of the CPU cores.
 		with mp.Pool(processes=1) as pool: 		# default processes=1; 4 should be managable on most machines
-			test_preds, unlabeled_preds = zip(*pool.map(
+			test_preds, unlabeled_preds, rf_feat_importances = zip(*pool.map(
 				partial(
 				run_CVmodel, model_alg=ML_alg, 
 				feat_data=feat_df,
 				pos_geneIDs=posLabel_genes),
-			 split_trainingGenes)) 	# iterate over each boostrap with information from 'split_trainingGenes'
+			split_trainingGenes)) 	# iterate over each boostrap with information from 'split_trainingGenes'
 
 			pool.close() 	# close pool
-
 
 		true_labels = test_preds[0]['True label']
 
@@ -255,12 +275,10 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		results_df = pd.concat(test_preds, axis=1)  # results from all iterations into one final results df
 		results_df['Average predicted label'] = results_df.mean(axis=1)
 		results_df['True label'] = true_labels
-
-		print(f'results df:\n{results_df}')
 		
 		# Save outputs
 		date = datetime.today().strftime('%d-%m-%Y') 	# get a string of the current date via strftime()
-		out_path = rf'{data_path}\outputs'
+		out_path = rf'outputs'
 
 		# results for unlabeled data
 		print(f'unlabeled_preds:\n{unlabeled_preds}')
@@ -273,32 +291,103 @@ def main(posLabel_genes, ML_alg, num_components, boot_iters=2, alg_name=''):
 		# Save results of model 
 		results_df.T.to_csv(rf'{out_path}\{alg_name}_Results_{date}.csv')
 
+		# When running Random Forests, we may like to visualize feature importances
+		if rf_feat_importances:
+			feat_impDF = pd.concat(rf_feat_importances, axis=1)
+			print(feat_impDF)
+			feat_impDF['Mean'] = feat_impDF.mean(axis=1)
+			feat_impDF.sort_values(by='Mean', ascending=False, inplace=True)
+			print(feat_impDF)
+			print(feat_impDF.iloc[:,:-1])
+
+			feat_plot = sns.barplot(feat_impDF.iloc[:,:-1].T, estimator='mean', errorbar='sd', orient="h", color="rebeccapurple")  	# color, mito= 'cadetblue', gsh='rebeccapurple', transporter='peru'
+
+			plt.xlabel('Mean impurity decrease', fontsize=14)
+			plt.ylabel('Classifier feature', fontsize=14)
+
+			fig = feat_plot.get_figure()
+			fig.savefig(rf'{out_path}\{alg_name}_featImportance_{date}.png', dpi=600, bbox_inches='tight')
+
+	return
+
+# define main function for defining input data and model parameters, then running models
+def main():
+
+	## load datasets to be used in models
+	## These correspond to all features used in the various described models
+	data_path = r'' 		## Optional - enter path to data
+
+	# Non-transcriptomics feature data
+	TrSSPMito_annots = pd.read_csv(rf'data\mitocarta_trssp_scores.csv', index_col=0, usecols=[0,4,5]) 	# load DF containing IDs & cols for mitocarta, trssp scores
+	mitocartaScores = TrSSPMito_annots.loc[:,'MitoCarta3.0 Class'] 	# get mitocarta values for mito classifier
+	# mitocartaScores = TrSSPMito_annots.loc[:,'TrSSP Class'] 	# get mitocarta values for transporter classifier
+
+	ccle_GSHCorrDF = pd.read_csv(rf'data\GSH_spearman.csv', index_col=0) 	# GSH genes
+
+	# Load labeled genes by GO annotation to be used as positive class for model
+	labeled_data = pd.ExcelFile(rf'data\mGSH_labeledGenes_HighConAnnots.xlsx')
+	mitoGenes_df = pd.read_excel(labeled_data, sheet_name='Mitochondrial Ensembl')
+	transpGenes_df = pd.read_excel(labeled_data, sheet_name='Transporter Ensembl')
+	gshGenes_df = pd.read_excel(labeled_data, sheet_name='GSH Ensembl')
+
+
+	# Can load different transcriptomics datasets to build models on
+	dataset_names = ['TCGA_SKCM_PCA', 'TCGA_LIHC_PCA', 'TCGA_PAAD_PCA', 'SKIN_transPC', 'LIVER_transPC', 'PANCREAS_transPC']
+	dataset_names = ['ccleTranscriptomics_PCA'] 	# NOTE: csv formatting is slightly different, see code below
+	dataset_names = ['TCGA_allDisease_PCA']
+	for f_name in dataset_names:
+		print(f'~~~~~~~~\n\n\tRUNNING MODEL FOR {f_name}\n\n~~~~~~~~')
+
+		# load data
+		gene_PCA_df = pd.read_csv(rf'data\{f_name}.csv', index_col=0, header=None, skiprows=3)  	# for TCGA (3 rows for PCA component information)
+		# gene_PCA_df = pd.read_csv(rf'data\{f_name}.csv', index_col=0)  	# For ccleTranscriptomics_PCA.csv header and skiprows arguments removed
+
+		print(f'gene_PCA_df:\n{gene_PCA_df}')
+
+		uniq_ids = gene_PCA_df.index.duplicated(keep='first')
+		print(f'uniq_ids:\n{uniq_ids}')
+		gene_PCA_df = gene_PCA_df.loc[~uniq_ids] 	# remove duplicate IDs
+		print(f'gene_PCA_df:\n{gene_PCA_df}')
+
+
+		## Code to run models with different parameters.
+		## Below will run models identical to the "transcriptomics-only" models described in the paper.
+		## Random forest classifier models are used, which are the best performing framework.
+		## Other tested algorithms (ML_alg): GaussianNB(), SVC(probability=True), DecisionTreeClassifier()
+
+		# Transporter classifiers
+		build_model_run(gene_PCA_df, posLabel_genes=transpGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=7, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'transp_{f_name}_RF_7')
+		build_model_run(gene_PCA_df, posLabel_genes=transpGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=16, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'transp_{f_name}_RF_16')
+		build_model_run(gene_PCA_df, posLabel_genes=transpGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=32, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'transp_{f_name}_RF_32')
+		build_model_run(gene_PCA_df, posLabel_genes=transpGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=52, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'transp_{f_name}_RF_52')
+
+		# Mitochondrial classifiers
+		build_model_run(gene_PCA_df, posLabel_genes=mitoGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=7, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'mito_{f_name}_RF_7')
+		build_model_run(gene_PCA_df, posLabel_genes=mitoGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=16, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'mito_{f_name}_RF_16')
+		build_model_run(gene_PCA_df, posLabel_genes=mitoGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=32, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'mito_{f_name}_RF_32')
+		build_model_run(gene_PCA_df, posLabel_genes=mitoGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=52, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'mito_{f_name}_RF_52')
+
+		# Glutathione classifiers
+		build_model_run(gene_PCA_df, posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=7, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'gsh_{f_name}_RF_7')
+		build_model_run(gene_PCA_df, posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=16, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'gsh_{f_name}_RF_16')
+		build_model_run(gene_PCA_df, posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=32, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'gsh_{f_name}_RF_32')
+		build_model_run(gene_PCA_df, posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), 
+				num_components=52, other_feats=None, feat_corrs=False, feat_cats=False, boot_iters=100, alg_name=f'gsh_{f_name}_RF_52')
+
+	return
 
 ##############
 #	RUN MAIN()
 ##############
-
-## Code to run models with different parameters.
-## Below are all model parameters (algorithm and feature combinations) used in this paper.
-## Uncommented runs correspond to random forest classifier models, which are the best performing framework.
-
-# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=7, boot_iters=100, alg_name='NB_5')
-# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=16, boot_iters=100, alg_name='NB_14')
-# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=32, boot_iters=100, alg_name='NB_30')
-# main(posLabel_genes=gshGenes_df, ML_alg=GaussianNB(), num_components=52, boot_iters=100, alg_name='NB_50')
-
-# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=7, boot_iters=100, alg_name='SVM_5')
-# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=16, boot_iters=100, alg_name='SVM_14')
-# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=32, boot_iters=100, alg_name='SVM_30')
-# main(posLabel_genes=gshGenes_df, ML_alg=SVC(probability=True), num_components=52, boot_iters=100, alg_name='SVM_50')
-
-# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=7, boot_iters=100, alg_name='DT_5')
-# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=16, boot_iters=100, alg_name='DT_14')
-# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=32, boot_iters=100, alg_name='DT_30')
-# main(posLabel_genes=gshGenes_df, ML_alg=DecisionTreeClassifier(), num_components=52, boot_iters=100, alg_name='DT_50')
-
-
-main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=7, boot_iters=100, alg_name='RF_5')
-main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=16, boot_iters=100, alg_name='RF_14')
-main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=32, boot_iters=100, alg_name='RF_30')
-main(posLabel_genes=gshGenes_df, ML_alg=RandomForestClassifier(), num_components=52, boot_iters=100, alg_name='RF_50')
+main()
