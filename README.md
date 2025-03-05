@@ -1,7 +1,7 @@
 # Information
 Contains all code and data used for:    
-"A hybrid machine learning framework for functional annotation applied to mitochondrial glutathione metabolism and transport in cancers" - Luke Kennedy, Jagdeep K Sandhu, Mary-Ellen Harper, and Miroslava Cuperlovic-Culf.    
-**💻📄**[**Read the paper here**](https://doi.org/10.1101/2023.09.20.558442)
+Kennedy, L., Sandhu, J.K., Harper, ME. *et al*. A hybrid machine learning framework for functional annotation of mitochondrial glutathione transport and metabolism proteins in cancers. *BMC Bioinformatics* **26**, 48 (2025).
+**💻📄**[**Read the paper here**](https://doi.org/10.1186/s12859-025-06051-1)
 
 All code can be run using the packages specified below and data provided in **data** to reproduce the models and results of this work (unless specified otherwise in the main text). Placeholder strings for path directories in the code should be replaced with the path to where ever the data is located on the indivdual's system. Parameters for e.g., ML algorithm or model features can be specified in the code to replicate described models or produce novel models.
 
@@ -76,4 +76,4 @@ In this example, these classifiers predict annotations for gene ontology terms o
 
 Simply entering the above command and replacing ```labeled-genes```, ```feature-data```, and possible ```other-features``` with the feature and label data of interest, meeting the aforementioned requirements, is sufficient for generating a novel classifier and predctions.
 
-We hope this code provides an easy implementation of our classification framework which can be used to generate hypotheses for biology! If you encounter and issues or would like to make a suggestion, please [open an issue](https://github.com/lkenn012/mGSH_cancerClassifiers/issues) so it can be addressed.
+This code provides an easy implementation of our classification framework which can be used to generate hypotheses for biology! If you encounter and issues or would like to make a suggestion, please [open an issue](https://github.com/lkenn012/mGSH_cancerClassifiers/issues) so it can be addressed.
